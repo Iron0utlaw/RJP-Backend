@@ -1,7 +1,6 @@
 import os
 import json
 from io import BytesIO
-from flask import Flask, Response, request, send_file, make_response
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
@@ -15,6 +14,7 @@ from fpdf import FPDF
 from PIL import Image
 import numpy as np
 from datetime import datetime
+from flask import Flask, Response, request, send_file, make_response
 
 
 
@@ -196,7 +196,7 @@ def generate_pie_3(df):
 
 def generate_top_5(df):
     dropped = df.drop(columns=['id','Follow_No_Response', 'Follow_Resolved', 'Follow_Resolving', 'Gender_Female', 'Gender_Male', 'Gender_Others'])
-    fig,ax = render_mpl_table(dropped.sort_values('NP_Ratio').head(), header_columns=0, col_width=3.0)
+    fig,ax = render_mpl_table(dropped.sort_values('ps_Rating').tail(), header_columns=0, col_width=3.0)
     
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png')
@@ -207,7 +207,7 @@ def generate_top_5(df):
 
 def generate_worst_5(df):
     dropped = df.drop(columns=['id','Follow_No_Response', 'Follow_Resolved', 'Follow_Resolving', 'Gender_Female', 'Gender_Male', 'Gender_Others'])
-    fig,ax = render_mpl_table(dropped.sort_values('NP_Ratio').tail(), header_columns=0, col_width=3.0)
+    fig,ax = render_mpl_table(dropped.sort_values('ps_Rating').head(), header_columns=0, col_width=3.0)
     
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png')
