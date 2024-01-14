@@ -14,7 +14,8 @@ from fpdf import FPDF
 from PIL import Image
 import numpy as np
 from datetime import datetime
-from flask import Flask, Response, request, send_file, make_response
+from flask import Flask, Response, request, send_file, make_response, jsonify
+from fpdf.enums import XPos, YPos
 
 
 
@@ -31,7 +32,7 @@ mail = Mail(app)
 
 plt.switch_backend('Agg')
 
-load_dotenv()  # Load variables from the .env file
+load_dotenv()
 
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
@@ -84,8 +85,9 @@ def fetch_stats():
         pie1 = generate_pie_1(ps_df)
         pie2 = generate_pie_2(ps_df)
         pie3 = generate_pie_3(ps_df)
+        pie4 = generate_pie_waiting(ps_df)
         img_buffer = generate_image(df)
-        pdf_buffer = create_pdf_with_header(img_buffer, top5, worst5, feedbacks, pie1, pie2, pie3)
+        pdf_buffer = create_pdf_with_header(img_buffer, top5, worst5, feedbacks, pie1, pie2, pie3, pie4)
         send_email_param = request.args.get('send_email', '').lower()
         if send_email_param == 'true':
             mailme(pdf_buffer.getvalue(),city_param)
@@ -194,8 +196,31 @@ def generate_pie_3(df):
 
     return img_buffer
 
+
+def generate_pie_waiting(df):
+    sum_column1 = df['Waiting_None'].sum()
+    sum_column2 = df['Waiting_Five'].sum()
+    sum_column3 = df['Waiting_Ten'].sum()
+    sum_column4 = df['Waiting_Fifteen'].sum()
+    sum_column5 = df['Waiting_More_Fifteen'].sum()
+
+    sum_values = [sum_column1, sum_column2, sum_column3, sum_column4, sum_column5]
+
+    labels = ['Immediately', '5 Mins', '10 Mins', '15 Mins', 'More Than 15 Mins']
+
+    plt.figure(figsize=(6, 6))
+    sns.set_palette("pastel")
+    plt.pie(x=sum_values, labels=labels, autopct='%1.1f%%', startangle=90)
+    plt.title('Waiting Period Distribution')
+    
+    img_buffer = BytesIO()
+    plt.savefig(img_buffer, format='png')
+    img_buffer.seek(0)
+
+    return img_buffer
+
 def generate_top_5(df):
-    dropped = df.drop(columns=['id','Follow_No_Response', 'Follow_Resolved', 'Follow_Resolving', 'Gender_Female', 'Gender_Male', 'Gender_Others'])
+    dropped = df.filter(['policeStation', 'City','ps_Rating'])
     fig,ax = render_mpl_table(dropped.sort_values('ps_Rating').tail(), header_columns=0, col_width=3.0)
     
     img_buffer = BytesIO()
@@ -206,7 +231,7 @@ def generate_top_5(df):
 
 
 def generate_worst_5(df):
-    dropped = df.drop(columns=['id','Follow_No_Response', 'Follow_Resolved', 'Follow_Resolving', 'Gender_Female', 'Gender_Male', 'Gender_Others'])
+    dropped = df.filter(['policeStation', 'City','ps_Rating'])
     fig,ax = render_mpl_table(dropped.sort_values('ps_Rating').head(), header_columns=0, col_width=3.0)
     
     img_buffer = BytesIO()
@@ -241,13 +266,13 @@ def generate_image(df):
 
 
 
-def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
+def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3,pie4):
     pdf = FPDF()
     
     pdf.add_page()
     available_width = pdf.w - 2 * pdf.l_margin
     image_size = 10  # Adjust the size as needed
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Helvetica", "B", 16)
     pdf.image('left_image1.png', x=pdf.l_margin, y=pdf.t_margin, w=image_size)
     pdf.image('left_image2.png', x=pdf.l_margin + image_size + 5, y=pdf.t_margin, w=image_size+2)
 
@@ -255,35 +280,36 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
     text_x = (available_width - text_width) / 2
 
     pdf.cell(text_x)  # Move to the calculated X position for centered text
-    pdf.cell(text_width, 10, txt="January Month Rajasthan Police Report", ln=True, align='C')
+    pdf.cell(text_width, 10, text="January Month Rajasthan Police Report", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
 
     pdf.image('right_image.png', x=pdf.w - pdf.r_margin - image_size-5, y=pdf.t_margin-5, w=image_size+10)
     pdf.set_line_width(1.05)
     pdf.ln(5)  # Move down a bit
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
     pdf.ln(20)  # Move down a bit
-    pdf.set_font("Arial", "B", 20)
-    pdf.cell(available_width, 10, txt="Overview", ln=True, align='L')
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(available_width, 10, text="Overview", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
 
     pdf.ln(5)  # Move down a bit
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 10, txt=f"Number of Feedbacks this Month: {feedbacks}", ln=True, align='L')
+    pdf.set_font("Helvetica", "", 12)
+    pdf.cell(0, 10, text=f"Number of Feedbacks this Month: {feedbacks}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
     
     pie1 = Image.open(pie1)
     pie2 = Image.open(pie2)
     pie3 = Image.open(pie3)
+    pie4 = Image.open(pie4)
 
     pdf.ln(5)  # Move down a bit
     pdf.image(pie1, x=pdf.l_margin, y=pdf.get_y(), w=available_width/2)
     pdf.image(pie2, x=pdf.l_margin + available_width/2, y=pdf.get_y(), w=available_width/2)
     pdf.ln(90)
-    pdf.image(pie2, x=pdf.l_margin, y=pdf.get_y(), w=available_width/2)
+    pdf.image(pie4, x=pdf.l_margin, y=pdf.get_y(), w=available_width/2)
     pdf.image(pie3, x=pdf.l_margin + available_width/2, y=pdf.get_y(), w=available_width/2)
 
     pdf.add_page()
     image_size = 10  # Adjust the size as needed
 
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Helvetica", "B", 16)
 
     pdf.image('left_image1.png', x=pdf.l_margin, y=pdf.t_margin, w=image_size)
 
@@ -293,7 +319,7 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
     text_x = (available_width - text_width) / 2
 
     pdf.cell(text_x)  # Move to the calculated X position for centered text
-    pdf.cell(text_width, 10, txt="January Month Rajasthan Police Report", ln=True, align='C')
+    pdf.cell(text_width, 10, text="January Month Rajasthan Police Report", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
 
 
     pdf.image('right_image.png', x=pdf.w - pdf.r_margin - image_size-5, y=pdf.t_margin-5, w=image_size+10)
@@ -306,8 +332,8 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
 
     pdf.ln(20)  # Move down a bit
-    pdf.set_font("Arial", "B", 20)
-    pdf.cell(available_width, 10, txt="Top 5 Performing Police Stations", ln=True, align='L')
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(available_width, 10, text="Top 5 Performing Police Stations", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
 
 
     img = Image.open(top5)
@@ -322,8 +348,8 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
 
 
     pdf.ln(new_height+5)  # Move down a bit
-    pdf.set_font("Arial", "B", 20)
-    pdf.cell(available_width, 10, txt="Worst 5 Performing Police Stations", ln=True, align='L')
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(available_width, 10, text="Worst 5 Performing Police Stations", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
 
 
     img = Image.open(worst5)
@@ -339,7 +365,7 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
     pdf.add_page()
     image_size = 10  # Adjust the size as needed
 
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Helvetica", "B", 16)
 
     pdf.image('left_image1.png', x=pdf.l_margin, y=pdf.t_margin, w=image_size)
 
@@ -349,7 +375,7 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
     text_x = (available_width - text_width) / 2
 
     pdf.cell(text_x)  # Move to the calculated X position for centered text
-    pdf.cell(text_width, 10, txt="January Month Rajasthan Police Report", ln=True, align='C')
+    pdf.cell(text_width, 10, text="January Month Rajasthan Police Report", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
 
 
     pdf.image('right_image.png', x=pdf.w - pdf.r_margin - image_size-5, y=pdf.t_margin-5, w=image_size+10)
@@ -362,8 +388,8 @@ def create_pdf_with_header(buffer,top5,worst5,feedbacks,pie1,pie2,pie3):
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
 
     pdf.ln(10)  # Move down a bit
-    pdf.set_font("Arial", "B", 20)
-    pdf.cell(available_width, 10, txt="City Wise Feedbacks", ln=True, align='L')
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(available_width, 10, text="City Wise Feedbacks", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='L')
     img = Image.open(buffer)
     img_width, img_height = img.size
 
