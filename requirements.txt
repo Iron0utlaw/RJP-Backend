@@ -9,6 +9,7 @@ dataclasses==0.6
 defusedxml==0.7.1
 deprecation==2.1.0
 Flask==3.0.0
+Flask-Cors==4.0.0
 Flask-Mail==0.9.1
 fonttools==4.47.0
 fpdf2==2.7.7

@@ -21,8 +21,11 @@ from modules.pie_guidance import generate_pie_guidance
 from modules.pie_help import generate_pie_help
 from modules.pie_infra import generate_pie_infra
 from modules.pie_rating import generate_pie_rating
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://feedback-system-police-private.vercel.app"]}})
+
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
