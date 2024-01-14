@@ -75,6 +75,31 @@ def fetch_stats():
             return 'Mail Sent'
         else:
             return send_file(pdf_buffer, download_name='output.pdf', as_attachment=True)
+    elif request.args.get('ps'):
+        ps_param = request.args.get('ps').upper()
+        ps_df = df.loc[df['policeStation'] == ps_param]
+        feedbacks = ps_df['Negative_Feedback'].sum() + ps_df['Positive_Feedback'].sum()
+        city = ''.join(char for char in ps_param if not (char.isdigit() or char.isspace()))
+        city_df = df.loc[df['City'] == city]
+        top5 = generate_top_5(city_df)
+        worst5 = generate_worst_5(city_df)
+        pie_feedback = generate_pie_feedback(ps_df)
+        pie_followup = generate_pie_followup(ps_df)
+        pie_gender = generate_pie_gender(ps_df)
+        pie_waiting = generate_pie_waiting(ps_df)
+        pie_behaviour = generate_pie_behaviour(ps_df)
+        pie_guidance = generate_pie_guidance(ps_df)
+        pie_help = generate_pie_help(ps_df)
+        pie_infra = generate_pie_infra(ps_df)
+        pie_rating = generate_pie_rating(ps_df)
+        img_buffer = generate_image(df)
+        pdf_buffer = create_pdf(img_buffer, top5, worst5, feedbacks, pie_feedback, pie_followup, pie_gender, pie_waiting, pie_behaviour, pie_rating,pie_guidance,pie_help,pie_infra)
+        send_email_param = request.args.get('send_email', '').lower()
+        if send_email_param == 'true':
+            mailme(pdf_buffer.getvalue(), ps_param)
+            return 'Mail Sent'
+        else:
+            return send_file(pdf_buffer, download_name='output.pdf', as_attachment=True)
     else:
         feedbacks = df['Negative_Feedback'].sum() + df['Positive_Feedback'].sum()
         top5 = generate_top_5(df)
