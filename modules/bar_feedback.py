@@ -1,21 +1,7 @@
-import os
-import json
 from io import BytesIO
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
-from supabase_py import create_client
-from dotenv import load_dotenv
-from flask_mail import Mail, Message
 import seaborn as sns
-import io
-import base64
-from fpdf import FPDF
-from PIL import Image
-import numpy as np
-from datetime import datetime
-from flask import Flask, Response, request, send_file, make_response, jsonify
-from fpdf.enums import XPos, YPos
 
 def generate_image(df):
     groupdf = df.groupby(['City']).sum()
