@@ -31,7 +31,6 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
 )
 CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://feedback-system-police-private.vercel.app"]}})
 
@@ -58,7 +57,7 @@ def index():
     return 'Rajasthan Police Station Feedback Data API'
 
 @app.route('/fetch_stats', methods=['GET'])
-@limiter.limit("2 per minute",exempt_when=lambda: not request.args.get('send_email'))
+@limiter.limit("1 per minute",exempt_when=lambda: not request.args.get('send_email'))
 def fetch_stats():    
     table_name = 'psStats'
     response = supabase.table(table_name).select().execute()
