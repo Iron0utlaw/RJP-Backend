@@ -32,6 +32,7 @@ def generate_top_5(df):
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png')
     img_buffer.seek(0)
+    plt.close()
 
     return img_buffer
 
@@ -43,5 +44,6 @@ def generate_worst_5(df):
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png')
     img_buffer.seek(0)
+    plt.close()
 
     return img_buffer

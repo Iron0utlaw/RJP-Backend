@@ -27,13 +27,13 @@ from flask_limiter.util import get_remote_address
 
 
 app = Flask(__name__)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://feedback-system-police-private.vercel.app"]}})
-limiter = Limiter(app, key_func=get_remote_address)
-
-@limiter.request_filter
-def ratelimit_exceeded(endpoint, view_func):
-    print("Rate limit exceeded for endpoint:", endpoint)
-    return jsonify(error="ratelimit exceeded"), 429
 
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -57,8 +57,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def index():
     return 'Rajasthan Police Station Feedback Data API'
 
-@limiter.limit("5 per minute")
 @app.route('/fetch_stats', methods=['GET'])
+@limiter.limit("2 per minute",exempt_when=lambda: not request.args.get('send_email'))
 def fetch_stats():    
     table_name = 'psStats'
     response = supabase.table(table_name).select().execute()

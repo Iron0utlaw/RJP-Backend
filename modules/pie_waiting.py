@@ -36,5 +36,6 @@ def generate_pie_waiting(df):
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png')
     img_buffer.seek(0)
+    plt.close()
 
     return img_buffer
