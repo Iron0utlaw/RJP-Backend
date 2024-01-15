@@ -22,9 +22,18 @@ from modules.pie_help import generate_pie_help
 from modules.pie_infra import generate_pie_infra
 from modules.pie_rating import generate_pie_rating
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://feedback-system-police-private.vercel.app"]}})
+limiter = Limiter(app, key_func=get_remote_address)
+
+@limiter.request_filter
+def ratelimit_exceeded(endpoint, view_func):
+    print("Rate limit exceeded for endpoint:", endpoint)
+    return jsonify(error="ratelimit exceeded"), 429
 
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -48,6 +57,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def index():
     return 'Rajasthan Police Station Feedback Data API'
 
+@limiter.limit("5 per minute")
 @app.route('/fetch_stats', methods=['GET'])
 def fetch_stats():    
     table_name = 'psStats'
