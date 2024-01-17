@@ -57,7 +57,7 @@ def index():
     return 'Rajasthan Police Station Feedback Data API'
 
 @app.route('/fetch_stats', methods=['GET'])
-@limiter.limit("1 per second",exempt_when=lambda: not request.args.get('send_email'))
+@limiter.limit("3 per second",exempt_when=lambda: not request.args.get('send_email'))
 def fetch_stats():    
     table_name = 'psStats'
     response = supabase.table(table_name).select().execute()
