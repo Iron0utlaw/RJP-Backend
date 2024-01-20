@@ -82,8 +82,8 @@ def fetch_stats():
         img_buffer = generate_image(df)
         pdf_buffer = create_pdf(img_buffer, top5, worst5, feedbacks, pie_feedback, pie_followup, pie_gender, pie_waiting, pie_behaviour, pie_rating,pie_guidance,pie_help,pie_infra)
         send_email_param = request.args.get('send_email', '').lower()
-        if send_email_param == 'true':
-            mailme(pdf_buffer.getvalue(), city_param)
+        if send_email_param != 'false':
+            mailme(pdf_buffer.getvalue(), city_param,send_email_param)
             return 'Mail Sent'
         else:
             return send_file(pdf_buffer, download_name='output.pdf', as_attachment=True)
@@ -107,8 +107,8 @@ def fetch_stats():
         img_buffer = generate_image(df)
         pdf_buffer = create_pdf(img_buffer, top5, worst5, feedbacks, pie_feedback, pie_followup, pie_gender, pie_waiting, pie_behaviour, pie_rating,pie_guidance,pie_help,pie_infra)
         send_email_param = request.args.get('send_email', '').lower()
-        if send_email_param == 'true':
-            mailme(pdf_buffer.getvalue(), ps_param)
+        if send_email_param != 'false':
+            mailme(pdf_buffer.getvalue(), ps_param,send_email_param)
             return 'Mail Sent'
         else:
             return send_file(pdf_buffer, download_name='output.pdf', as_attachment=True)
@@ -128,8 +128,8 @@ def fetch_stats():
         img_buffer = generate_image(df)
         pdf_buffer = create_pdf(img_buffer, top5, worst5, feedbacks, pie_feedback, pie_followup, pie_gender, pie_waiting, pie_behaviour, pie_rating,pie_guidance,pie_help,pie_infra)
         send_email_param = request.args.get('send_email', '').lower()
-        if send_email_param == 'true':
-            mailme(pdf_buffer.getvalue())
+        if send_email_param != 'false':
+            mailme(pdf_buffer.getvalue(),send_email_param)
             return 'Mail Sent'
         else:
             return send_file(pdf_buffer, download_name='output.pdf', as_attachment=True)
@@ -281,8 +281,8 @@ def create_pdf(buffer, top5, worst5, feedbacks, pie_feedback, pie_followup, pie_
     return pdf_buffer
 
 
-def mailme(pdf_bytes, city=None):
-    all_emails = ['rajasthanhackathon4@gmail.com']
+def mailme(pdf_bytes, city=None, email=""):
+    all_emails = ['rajasthanhackathon4@gmail.com',email]
     current_month = datetime.now().strftime("%B")
     
     with app.app_context():
